@@ -1,0 +1,105 @@
+
+
+# input system......
+structure       m13_ions.psf
+coordinates     m13_ions.pdb
+bincoordinates  ./abf_quench2.coor
+binvelocities   ./abf_quench2.vel
+extendedSystem  ./abf_quench2.xsc
+
+#..force field........................
+paratypecharmm  on      
+parameters      par_all36m_prot.prm                 
+#parameters      par_all36_lipid.prm
+parameters      par_all36_cgenff.prm
+parameters      mod13.str
+parameters      toppar_water_ions.str
+exclude         scaled1-4                
+1-4scaling      1.0                      
+dielectric      1.0                    
+
+vdwForceSwitching off
+switching       on                  
+switchdist      8.0                 
+cutoff          12.0                
+pairlistdist    13.5                
+margin          0.0                 
+stepspercycle   20                 
+rigidBonds      all                 
+rigidTolerance  0.00001             
+rigidIterations 100
+
+# rest2 scaling
+soluteScaling        yes
+soluteScalingFactor  1.000000000000000
+#sptScaleFactor2 
+soluteScalingCol     B
+soluteScalingFile    spt.pdb
+soluteScalingAll     yes
+
+# Ewald EL..........................
+PME             on                 
+PMETolerance    0.000001          
+PMEGridSizeX    60
+PMEGridSizeY    60
+PMEGridSizeZ    80
+#PMEGridSpacing  1.0
+
+#integrator ...........
+timestep 1.0
+fullElectFrequency 4
+
+#constraints
+constraints    on
+consref        sphere_k1.pdb
+conskfile      sphere_k1.pdb
+conskcol       B
+tclforces      on
+#set k          "constraintk"
+tclforcesscript constraints.tcl
+
+#boundary constraints
+#tclBC on
+#tclBCScript {
+# source boundaries.tcl
+#}
+#tclBCArgs {10.0} # k
+
+#output....................
+outputenergies  2000
+outputtiming    2000
+binaryoutput    yes
+outputname      ./abf_quench2
+
+DCDfile         output/abf_quench1_100000_2.dcd
+dcdfreq         2000
+
+#MD protocol..............
+seed            5611000002
+numsteps        0
+
+langevin          on
+langevinDamping   5
+langevinTemp      310
+langevinHydrogen  off
+
+#......npt .............
+useGroupPressure      yes #  for rigid bonds...
+useFlexibleCell       no
+useConstantRatio      no
+useConstantArea       no
+
+langevinPiston        on
+langevinPistonTarget  1.01325
+langevinPistonPeriod  200.
+langevinPistonDecay   100.
+langevinPistonTemp    310
+
+# periodic boundary conditions......
+#cellBasisVector1  53.7766      0.0      0.0
+#cellBasisVector2      0.0  53.7766      0.0
+#cellBasisVector3      0.0      0.0  53.7766
+#cellOrigin            0.0      0.0      0.0
+wrapAll          on
+
+#run 0
