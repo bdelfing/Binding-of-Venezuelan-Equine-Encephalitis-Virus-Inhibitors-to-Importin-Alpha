@@ -1,0 +1,58 @@
+
+# load trajectory
+
+set repmin 1
+set repmax 1
+set trmin 4
+set trmax 4
+set strmin 1
+set strmax 50000
+mol new ./masking_i1_ions.psf waitfor all
+set path /data/bdelfing/impa/masking_i1
+
+set sel [atomselect top "segname LIG1 and noh"]
+set ligList [$sel get index]
+$sel delete
+set sel [atomselect top "segname PEPT and noh"]
+set peptList [$sel get index]
+$sel delete
+file mkdir minDist
+for {set rep $repmin} {$rep <= $repmax} {incr rep 1} {
+ for {set tr $trmin} {$tr <= $trmax} {incr tr 1} {
+   set outfile1 [open "minDist/minDist_tr${tr}.dat" w]
+   for {set strid $strmin} {$strid <= $strmax} {incr strid 1} {
+     if { $strid >= 1 && $strid < 10 } {   
+       mol addfile ${path}/tr${tr}/output/abf_quench${tr}_000${strid}_${rep}.dcd waitfor all
+     } elseif { $strid >= 10 && $strid < 100 } {   
+       mol addfile ${path}/tr${tr}/output/abf_quench${tr}_00${strid}_${rep}.dcd waitfor all
+     } elseif { $strid >= 100 && $strid < 10000 } {   
+       mol addfile ${path}/tr${tr}/output/abf_quench${tr}_0${strid}_${rep}.dcd waitfor all
+     } elseif { $strid >= 10000 } {   
+       mol addfile ${path}/tr${tr}/output/abf_quench${tr}_${strid}_${rep}.dcd waitfor all
+     }
+     set minDist 10000
+     foreach i $peptList {
+       set selP [atomselect top "segname PEPT and noh and index $i"]
+       set pept [measure center $selP]
+       $selP delete
+       foreach j $ligList {
+         set selL [atomselect top "segname LIG1 and noh index $j"]
+         set lig [measure center $selL]
+         $selL delete
+
+         set dist [vecdist $pept $lig]
+         if {$dist < $minDist} {
+           set minDist $dist
+         }
+       }
+     }
+     puts $outfile1 $minDist
+     
+     animate delete all
+   }
+ flush $outfile1
+ close $outfile1
+ }
+}
+
+exit

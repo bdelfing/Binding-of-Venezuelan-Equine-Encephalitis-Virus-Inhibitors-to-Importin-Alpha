@@ -1,0 +1,34 @@
+package require hbonds
+
+#Variables used for reading in data
+set trmin 4
+set trmax 4
+set strmin 1
+set strmax 50000
+mol new /data/bdelfing/impa/masking_i1/misc/masking_i1_ions.psf waitfor all
+
+#load all files
+for {set tr $trmin} {$tr <= $trmax} {incr tr 1} {
+  set path /data/bdelfing/impa/masking_i1
+  for {set strid $strmin} {$strid <= $strmax} {incr strid 1} {
+    if { $strid >= 1 && $strid < 10 } {   
+      mol addfile ${path}/tr${tr}/output/abf_quench${tr}_000${strid}_1.dcd waitfor all
+    } elseif { $strid >= 10 && $strid < 100 } {   
+      mol addfile ${path}/tr${tr}/output/abf_quench${tr}_00${strid}_1.dcd waitfor all
+    } elseif { $strid >= 100 && $strid < 10000 } {   
+      mol addfile ${path}/tr${tr}/output/abf_quench${tr}_0${strid}_1.dcd waitfor all
+    } elseif { $strid >= 10000 } {   
+      mol addfile ${path}/tr${tr}/output/abf_quench${tr}_${strid}_1.dcd waitfor all
+    }
+  }
+}
+#make sure all frames are loaded
+set nfr [molinfo top get numframes]
+echo "Analyzing $nfr frames"
+
+#compute hydrogen bonds
+set sel1 [atomselect top "segname PEPT and (oxygen or nitrogen)"]
+set sel2 [atomselect top "segname LIG1 and (oxygen or nitrogen)"]
+hbonds -sel1 $sel1 -sel2 $sel2 -dist 3.5 -ang 45 -writefile yes -DA both -type unique -outfile hbonds/kkpkke_i1_hbonds_peplig_u4.dat -detailout hbonds/kkpkke_i1_hbonds_peplig_u4_detail.dat 
+
+exit

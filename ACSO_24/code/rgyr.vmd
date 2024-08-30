@@ -1,0 +1,39 @@
+set rep 1
+
+set trmin 1
+set trmax 1
+
+set strmin 1
+set strmax 50000
+
+#number of frames to increment by
+set skip 1
+
+mol new /data/bdelfing/impa/masking_i1/misc/masking_i1_ions.psf waitfor all
+
+for {set tr $trmin} {$tr <= $trmax} {incr tr 1} {
+  set output_file [open "./rgyr/kkpkke_rgyr${tr}.dat" w]
+  #set output_file [open "./cm/kkpkke_cm${tr}.dat" a]
+  for {set str $strmin} {$str <= $strmax} {incr str $skip} {  
+    if {$str < 1000} { 
+      set cstr [format "%04i" $str]
+    } elseif {$str >= 1000 && $str < 100000} {
+      set cstr [format "%05i" $str]
+    } elseif {$str >= 100000} {
+      set cstr [format "%06i" $str]
+    }
+
+    set path /data/bdelfing/impa/masking_i1/tr${tr}
+    #delete previous frame
+    animate delete all
+    mol addfile ${path}/output/abf_quench${tr}_${cstr}_${rep}.dcd waitfor all
+    
+    set sel [atomselect top "segname PEPT and noh"]
+    puts $output_file [measure rgyr $sel]
+    $sel delete
+  } 
+  flush $output_file
+  close $output_file
+}
+
+exit

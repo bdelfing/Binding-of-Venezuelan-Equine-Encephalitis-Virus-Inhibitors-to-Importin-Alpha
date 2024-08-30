@@ -1,0 +1,68 @@
+
+# load trajectory
+
+set trmin 1
+set trmax 4
+set strmin 1
+set strmax 50000
+set skip 1
+mol new /data/bdelfing/impa/masking_i1/misc/masking_i1_ions.psf waitfor all
+set outfile [open "asa_.dat" w]
+#frame counter for output
+for {set tr $trmin} {$tr <= $trmax} {incr tr 1} {
+  for {set strid $strmin} {$strid <= $strmax} {incr strid $skip} {
+    if { $strid >= 1 && $strid < 10 } {   
+      mol addfile ../tr${tr}/output/abf_quench${tr}_000${strid}_1.dcd waitfor all
+    } elseif { $strid >= 10 && $strid < 100 } {   
+      mol addfile ../tr${tr}/output/abf_quench${tr}_00${strid}_1.dcd waitfor all
+    } elseif { $strid >= 100 && $strid < 10000 } {   
+      mol addfile ../tr${tr}/output/abf_quench${tr}_0${strid}_1.dcd waitfor all
+    } elseif { $strid >= 10000 } {   
+      mol addfile ../tr${tr}/output/abf_quench${tr}_${strid}_1.dcd waitfor all
+    }
+
+    #set atomselections
+    set peplig [atomselect top "(segname PEPT and not hydrogen) or (resname LGG and not hydrogen)"]
+    set pepligA [atomselect top "((segname PEPT and not hydrogen) or (resname LGG and not hydrogen)) and (carbon or sulfur)"]
+    set pepligP [atomselect top "((segname PEPT and not hydrogen) or (resname LGG and not hydrogen)) and (nitrogen or oxygen)"]
+    set pep [atomselect top "(segname PEPT and not hydrogen)"]
+    set pepA [atomselect top "segname PEPT and (carbon or sulfur)"]
+    set pepP [atomselect top "segname PEPT and (nitrogen or oxygen)"]
+    set lig [atomselect top "segname LIG1 and not hydrogen"]
+    set ligA [atomselect top "segname LIG1 and (carbon or sulfur)"]
+    set ligP [atomselect top "segname LIG1 and (nitrogen or oxygen)"]
+    #compute SASA
+    set asaP [measure sasa 1.4 $pep]
+    set asaPA [measure sasa 1.4 $pep -restrict $pepA]
+    set asaPP [measure sasa 1.4 $pep -restrict $pepP]
+
+    set asaPL [measure sasa 1.4 $peplig]
+    set asaPLA [measure sasa 1.4 $peplig -restrict $pepligA]
+    set asaPLP [measure sasa 1.4 $peplig -restrict $pepligP]
+
+    set asaL [measure sasa 1.4 $lig]
+    set asaLA [measure sasa 1.4 $lig -restrict $ligA]
+    set asaLP [measure sasa 1.4 $lig -restrict $ligP]
+    #compute change in SASA
+    set diff [expr ($asaPL - $asaP - $asaL)]
+    set diffA [expr ($asaPLA - $asaPA - $asaLA)]
+    set diffP [expr ($asaPLP - $asaPP - $asaLP)]
+    puts $outfile [list $diff $diffA $diffP]
+
+    #delete atom selections
+    $peplig delete
+    $pepligA delete
+    $pepligP delete
+    $pep delete
+    $pepA delete
+    $pepP delete
+    $lig delete
+    $ligA delete
+    $ligP delete
+
+    animate delete all
+  }
+}
+close $outfile
+
+exit
